@@ -169,8 +169,10 @@ class ConformerBlock(nn.Module):
         return x
 
 
-class Conformer(nn.Module):
+class Generator(nn.Module):
     r"""
+    Model: Conformer
+
     Args:
         input_dim (int): input dimension.
         num_heads (int): number of attention heads in each Conformer layer.
@@ -195,7 +197,6 @@ class Conformer(nn.Module):
             convolution_first=False,
     ):
         super().__init__()
-        self.prenet = nn.Linear(input_dim, input_dim)
         self.conformer_blocks = nn.ModuleList(
             [
                 ConformerBlock(
@@ -210,7 +211,8 @@ class Conformer(nn.Module):
                 for _ in range(num_layers)
             ]
         )
-        self.prediction = nn.Linear(input_dim, input_dim)
+        output_dim = input_dim
+        self.generator_output = nn.Linear(input_dim, output_dim)
 
     def forward(self, x):
         r"""
@@ -220,14 +222,13 @@ class Conformer(nn.Module):
         Returns:
             torch.Tensor: output with shape `(B, T, input_dim)`.
         """
-        x = self.prenet(x)
 
         x = x.transpose(0, 1)
         for layer in self.conformer_blocks:
             x = layer(x)
         x = x.transpose(0, 1)
 
-        return self.prediction(x)
+        return self.generator_output(x)
 
 
 # Define the batch size, number of channels, height, and width
@@ -242,7 +243,7 @@ print(f'original shape: {test_data.shape}')
 test_data = test_data.view(batch_size, num_channels, height * width)
 print(f'flattened shape: {test_data.shape}')
 
-conformer = Conformer(
+conformer = Generator(
     input_dim=height * width,
     num_heads=4,
     ffn_dim=32,
