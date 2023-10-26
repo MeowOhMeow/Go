@@ -1,4 +1,5 @@
 # Go
+## core concepts (https://blog.csdn.net/qq_44766883/article/details/112615786)
 ## power point
 ![投影片1](https://github.com/MeowOhMeow/Go/assets/89769840/3d8671cc-95ae-4456-a261-43e3b2514669)
 ![投影片2](https://github.com/MeowOhMeow/Go/assets/89769840/84999332-7d95-40e0-b6dd-922551dbd417)
