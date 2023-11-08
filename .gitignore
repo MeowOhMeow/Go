@@ -1,6 +1,7 @@
 data/*
 models/*
 *.mp4
+.venv/*
 test.py
 test.ipynb
 .venv
