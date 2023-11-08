@@ -2,3 +2,4 @@ data/*
 models/*
 *.mp4
 test.py
+.venv
