@@ -94,7 +94,7 @@ class Trainer:
                             .sum()
                             .item()
                         )
-            if i == 1:
+            if i == 100:
                 break
             
         val_losses.append(total_loss / len(self.val_loader))
@@ -144,7 +144,7 @@ class Trainer:
 
                     total_loss += loss.item()
             
-            if i == 9:
+            if i == 900:
                 break
 
 
