@@ -1,8 +1,8 @@
 import csv
 import os
-import time
 
 import torch
+import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import Dataset
 
@@ -10,7 +10,7 @@ from GoGame import GoGame
 
 
 class GoDataset(Dataset):
-    def __init__(self, path_of_data, length):
+    def __init__(self, path_of_data):
         """
         Initializes the GoDataset with the given CSV file path.
         Args:
@@ -19,8 +19,6 @@ class GoDataset(Dataset):
         super().__init__()
         self.path = path_of_data
         self.preprocessed_path = "data/preprocessed data"
-        self.length = length
-        self.goGame = GoGame()
         self.char2idx = {c: i for i, c in enumerate("abcdefghijklmnopqrs")}
         self.dir_len = len(os.listdir('data/preprocessed data'))
 
@@ -29,43 +27,41 @@ class GoDataset(Dataset):
             reader = csv.reader(csvfile, delimiter=",")
             # Read row by row
             self.data = list(reader)  # dtype: list[str]
+            
+        longest = 0
+        for row in self.data:
+            longest = max(longest, len(row))
+        self.longest = longest - 2
 
-    def __rotate_board(self, board, n):
-        board = torch.rot90(board, k=n, dims=(2, 3))
-
-        return board
-
-    def __read_from_file(self, row):
+    def _read_from_file(self, row):
         # get filename
         filename = os.path.join(self.preprocessed_path, f'subdir_{int(row[0][2:])%self.dir_len}', row[0])
+        
+        # get boards
         boards = torch.load(filename + ".pt").to(
             dtype=torch.float32
         )
+        # discard the last board, this board doesn't have a label
+        boards = boards[:-1]
+        
+        max_len = len(boards)
 
-        random_start = np.random.randint(0, len(boards) - self.length)
-        boards = boards[random_start : random_start + self.length]
+        # pad boards
+        boards = F.pad(boards, (0, 0, 0, 0, 0, 0, 0, self.longest - max_len))
 
         # get label
-        self.goGame.reset()
-        dim = 0 if row[random_start + self.length + 2][0] == "B" else 1
-        self.goGame.place_stone(
-            self.char2idx[row[random_start + self.length + 2][2]],
-            self.char2idx[row[random_start + self.length + 2][3]],
-            dim,
-        )
-        label = self.goGame.get_board().clone()
+        label = torch.zeros((self.longest, 361), dtype=torch.float32)
+        for i in range(3, len(row)):
+            # get x, y
+            x, y = self.char2idx[row[i][2]], self.char2idx[row[i][3]]
+            # set label
+            label[i - 3][x * 19 + y] = 1
 
-        # add a board to the end of the sequence
-        # color_board = torch.zeros((2, 19, 19), dtype=torch.float32)
-        # color_board[dim] = torch.ones((19, 19), dtype=torch.float32)
-        # boards = torch.cat((boards, color_board.unsqueeze(0)), dim=0)
-
-        # rotate boards and label
-        # boards = self.__rotate_board(boards, self.rotate_times)
-        # label = label.rot90(self.rotate_times, dims=(1, 2))
-        label = label.reshape(-1)
-
-        return boards, label
+        return boards, max_len, label
+    
+    def get_longest_game(self):
+        
+        return self.longest
 
     def __len__(self):
         """
@@ -86,9 +82,5 @@ class GoDataset(Dataset):
         # Get data at the given index
         row = self.data[idx]
 
-        # Randomly rotate times
-        self.rotate_times = np.random.randint(3)
+        return self._read_from_file(row)
 
-        # Transform data into a board
-        processed_data, label = self.__read_from_file(row)
-        return processed_data, label

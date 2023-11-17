@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from GoDataset import GoDataset
-from ParmFinder import ParmFinder
+# from ParmFinder import ParmFinder
 from Trainer import Trainer
 
 
@@ -27,10 +27,12 @@ seed = 11032006
 set_seed(seed)
 
 
+goDataset = GoDataset("data/train/dan_train.csv")
 
 config = {
-    "input_dim": 19 * 19 * 2,
-    "num_heads": 2,
+    "input_dim": 19 * 19 * 3,
+    "output_dim": 19 * 19,
+    "num_heads": 3,
     "ffn_dim": 512,
     "num_layers": 3,
     "depthwise_conv_kernel_size": 3,
@@ -42,16 +44,15 @@ config = {
     "dis_path": "data/models/dis",
     "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     # "device": torch.device("cpu"),
-    "batch_size": 512,
+    "batch_size": 16,
     "clip_value": 1,
-    "data_len": 8,
-    "epochs": 10,
-    "early_stop": 400,
+    "data_len": goDataset.get_longest_game(),
+    "epochs": 1,
+    "early_stop": 1,
     "selected": 0
 }
 
-goDataset = GoDataset("data/train/dan_train.csv", config["data_len"])
-train_len = int(0.8 * len(goDataset))
+train_len = int(0.9 * len(goDataset))
 val_len = len(goDataset) - train_len
 train_dataset, val_dataset = torch.utils.data.random_split(
     goDataset, [train_len, val_len]

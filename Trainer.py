@@ -4,10 +4,11 @@ import os
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from Predictor import Predictor
+from Model import Predictor
 
 
 class Trainer:
@@ -35,6 +36,7 @@ class Trainer:
         else:
             self.pre = Predictor(
                 input_dim=config["input_dim"],
+                output_dim=config["output_dim"],
                 max_len=config["data_len"],
                 num_heads=config["num_heads"],
                 ffn_dim=config["ffn_dim"],
@@ -63,20 +65,38 @@ class Trainer:
         total_loss = 0
         total_correct = 0
 
-        for i, (x, y) in enumerate(tqdm(self.val_loader)):
-            x = x.to(self.config["device"])
-            y = y.to(self.config["device"])
+        for i, (data, max_len, label) in enumerate(tqdm(self.val_loader)):
+            data = data.to(self.config["device"])
+            label = label.to(self.config["device"])
+            max_len = max_len.to(self.config["device"])
 
             with torch.no_grad():
-                output = self.pre(x)
+                for j in range(0, max_len.max()):
+                    # Check if any data point in the batch has reached its max_len
+                    unfinished_data = max_len > j
 
-            total_correct += (
-                torch.sum(torch.argmax(output, dim=1) == torch.argmax(y, dim=1)).item()
-            )
+                    if unfinished_data.any():
+                        # Only process data points that haven't reached max_len
+                        current_data = data[unfinished_data, : j + 1]
+                        current_label = label[unfinished_data, j]
+                        current_max_len = max_len[unfinished_data]
 
-            loss = self.criterion(output, y).item()
-            total_loss += loss
+                        current_data = F.pad(current_data, (0, 0, 0, 0, 0, 0, 0, max_len.max() - current_data.shape[1]))
 
+                        output = self.pre(current_data, current_max_len)
+
+                        loss = self.criterion(output, current_label)
+
+                        total_loss += loss.item()
+
+                        total_correct += (
+                            (output.argmax(dim=1) == current_label.argmax(dim=1))
+                            .sum()
+                            .item()
+                        )
+            if i == 1:
+                break
+            
         val_losses.append(total_loss / len(self.val_loader))
         val_accs.append(total_correct / len(self.val_loader.dataset))
 
@@ -90,19 +110,43 @@ class Trainer:
 
         total_loss = 0
 
-        for i, (x, y) in enumerate(tqdm(self.train_loader)):
-            self.optimizer.zero_grad()
+        for i, (data, max_len, label) in enumerate(tqdm(self.train_loader)):
+            data = data.to(self.config["device"])
+            label = label.to(self.config["device"])
+            max_len = max_len.to(self.config["device"])
 
-            x = x.to(self.config["device"])
-            y = y.to(self.config["device"])
+            for j in range(0, max_len.max()):
+                # Check if any data point in the batch has reached its max_len
+                unfinished_data = max_len > j
 
-            output = self.pre(x)
-            loss = self.criterion(output, y)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.pre.parameters(), max_norm=self.clip_value)
-            self.optimizer.step()
+                if unfinished_data.any():
+                    self.optimizer.zero_grad()
 
-            total_loss += loss.item()
+                    # Only process data points that haven't reached max_len
+                    current_data = data[unfinished_data, : j + 1]
+                    current_label = label[unfinished_data, j]
+                    current_max_len = max_len[unfinished_data]
+
+                    # (B, T, ~) -> (B, max_len, ~)
+                    current_data = F.pad(current_data, (0, 0, 0, 0, 0, 0, 0, max_len.max() - current_data.shape[1]))
+
+                    output = self.pre(current_data, current_max_len)
+
+                    loss = self.criterion(output, current_label)
+
+                    loss.backward()
+
+                    torch.nn.utils.clip_grad_norm_(
+                        self.pre.parameters(), self.clip_value
+                    )
+
+                    self.optimizer.step()
+
+                    total_loss += loss.item()
+            
+            if i == 9:
+                break
+
 
         train_losses.append(total_loss / len(self.train_loader))
         
@@ -122,11 +166,11 @@ class Trainer:
             gc.collect()
             torch.cuda.empty_cache()
 
-            if (epoch + 1) % 10 == 0:
-                torch.save(
-                    self.pre,
-                    f"models/{self.version}/epoch_{epoch + 1}.pth",
-                )
+
+            torch.save(
+                self.pre,
+                f"models/{self.version}/epoch_{epoch + 1}.pth",
+            )
 
             if self.early_count >= self.config["early_stop"]:
                 break

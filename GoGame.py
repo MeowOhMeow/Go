@@ -15,7 +15,7 @@ class GoGame:
         """
 
         self.board_size = board_size
-        self.board = torch.zeros((board_size, board_size, 2), dtype=torch.float32)
+        self.board = torch.zeros((board_size, board_size, 3), dtype=torch.float32)
 
     def place_stone(self, x, y, dim) -> None:
         """
@@ -26,6 +26,7 @@ class GoGame:
             dim (float): Color of the stone (0 for black, 1 for white).
         """
         self.board[x][y][dim] = 1
+        self.board[x][y][2] = 1
 
     def get_board(self) -> torch.Tensor:
         """
@@ -40,5 +41,5 @@ class GoGame:
         Resets the game board to the initial state.
         """
         self.board = torch.zeros(
-            (self.board_size, self.board_size, 2), dtype=torch.float32
+            (self.board_size, self.board_size, 3), dtype=torch.float32
         )
