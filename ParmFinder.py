@@ -88,8 +88,8 @@ class ParmFinder:
         for epoch in range(self.max_epoch):
             G_losses = []
             G_val_losses = []
-            trainer.normal_train_G(G_losses)
-            trainer.normal_evaluate_G(G_val_losses)
+            trainer.train(G_losses)
+            trainer.evaluate(G_val_losses)
 
             train_loss = np.mean(G_losses)
             val_loss = np.mean(G_val_losses)

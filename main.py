@@ -67,3 +67,10 @@ val_loader = DataLoader(
 )
 trainer = Trainer(config, train_loader, val_loader)
 statistic = trainer.train()
+
+
+for key, value in statistic.items():
+    plt.plot(value, label=key)
+    plt.legend()
+    plt.savefig(f"plot/{key}.png")
+    plt.clf()
