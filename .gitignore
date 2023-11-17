@@ -4,4 +4,5 @@ models/*
 .venv/*
 test.py
 test.ipynb
-.venv
+.vscode/*
+__pycache__/*

@@ -42,10 +42,10 @@ config = {
     "dis_path": "data/models/dis",
     "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     # "device": torch.device("cpu"),
-    "batch_size": 16,
+    "batch_size": 512,
     "clip_value": 1,
-    "data_len": 64,
-    "epochs": 20,
+    "data_len": 8,
+    "epochs": 10,
     "early_stop": 400,
     "selected": 0
 }
@@ -66,7 +66,7 @@ val_loader = DataLoader(
     val_dataset, batch_size=int(config["batch_size"]), shuffle=False, pin_memory=True
 )
 trainer = Trainer(config, train_loader, val_loader)
-statistic = trainer.train()
+statistic = trainer.run()
 
 
 for key, value in statistic.items():

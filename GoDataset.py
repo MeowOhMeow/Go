@@ -2,6 +2,7 @@ import csv
 import os
 import time
 
+import torch
 import numpy as np
 from torch.utils.data import Dataset
 
@@ -46,10 +47,10 @@ class GoDataset(Dataset):
 
         # get label
         self.goGame.reset()
-        dim = 0 if row[random_start + self.length][0] == "B" else 1
+        dim = 0 if row[random_start + self.length + 2][0] == "B" else 1
         self.goGame.place_stone(
-            self.char2idx[row[random_start + self.length][2]],
-            self.char2idx[row[random_start + self.length][3]],
+            self.char2idx[row[random_start + self.length + 2][2]],
+            self.char2idx[row[random_start + self.length + 2][3]],
             dim,
         )
         label = self.goGame.get_board().clone()

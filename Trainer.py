@@ -1,5 +1,6 @@
 import datetime
 import gc
+import os
 
 import torch
 import torch.nn as nn
@@ -25,6 +26,9 @@ class Trainer:
         self.val_loader = val_loader
         self.from_epoch = from_epoch
         self.version = version
+        
+        if not os.path.exists(f"models/{version}"):
+            os.makedirs(f"models/{version}")
 
         if load_model:
             self.pre = torch.load(path)
@@ -67,12 +71,10 @@ class Trainer:
                 output = self.pre(x)
 
             total_correct += (
-                torch.sum(torch.argmax(output, dim=1) == torch.argmax(y, dim=1))
-                .item()
-                .to("cpu")
+                torch.sum(torch.argmax(output, dim=1) == torch.argmax(y, dim=1)).item()
             )
 
-            loss = self.criterion(output, y).item().to("cpu")
+            loss = self.criterion(output, y).item()
             total_loss += loss
 
         val_losses.append(total_loss / len(self.val_loader))
@@ -99,26 +101,26 @@ class Trainer:
             torch.nn.utils.clip_grad_norm_(self.pre.parameters(), max_norm=self.clip_value)
             self.optimizer.step()
 
-            total_loss += loss.item().to("cpu")
+            total_loss += loss.item()
 
         train_losses.append(total_loss / len(self.train_loader))
         
         print(f"Training loss: {total_loss / len(self.train_loader)}")
 
 
-    def train(self):
+    def run(self):
         trian_losses = []
         val_losses = []
 
         for epoch in range(self.config["epochs"]):
-            print(f"Epoch {epoch + 1}:")
+            print(f"Epoch {epoch + 1}/{self.config['epochs']}")
             self.train(trian_losses)
             self.evaluate(val_losses)
 
             gc.collect()
             torch.cuda.empty_cache()
 
-            if (epoch + 1) % 5 == 0:
+            if (epoch + 1) % 10 == 0:
                 torch.save(
                     self.pre,
                     f"models/{self.version}/epoch_{epoch + 1}.pth",
