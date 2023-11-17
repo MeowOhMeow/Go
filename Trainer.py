@@ -55,7 +55,7 @@ class Trainer:
         self.early_count = 0
         self.best_val_loss = float("inf")
 
-    def evaluate(self, val_losses: list):
+    def evaluate(self, val_losses: list, val_accs: list):
         print(f"Evaluating:")
 
         self.pre.eval()
@@ -78,6 +78,7 @@ class Trainer:
             total_loss += loss
 
         val_losses.append(total_loss / len(self.val_loader))
+        val_accs.append(total_correct / len(self.val_loader.dataset))
 
         print(f"Validation accuracy: {total_correct / len(self.val_loader.dataset)}")
         print(f"Validation loss: {total_loss / len(self.val_loader)}")
@@ -111,11 +112,12 @@ class Trainer:
     def run(self):
         trian_losses = []
         val_losses = []
+        val_accs = []
 
         for epoch in range(self.config["epochs"]):
             print(f"Epoch {epoch + 1}/{self.config['epochs']}")
             self.train(trian_losses)
-            self.evaluate(val_losses)
+            self.evaluate(val_losses, val_accs)
 
             gc.collect()
             torch.cuda.empty_cache()
@@ -132,4 +134,5 @@ class Trainer:
         return {
             "train_losses": trian_losses,
             "val_losses": val_losses,
+            "val_accs": val_accs,
         }
