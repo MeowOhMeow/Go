@@ -79,9 +79,9 @@ class Trainer:
                         # Only process data points that haven't reached max_len
                         current_data = data[unfinished_data, : j + 1]
                         current_label = label[unfinished_data, j]
-                        current_max_len = max_len[unfinished_data]
-
-                        current_data = F.pad(current_data, (0, 0, 0, 0, 0, 0, 0, max_len.max() - current_data.shape[1]))
+                        current_max_len = torch.ones_like(max_len[unfinished_data]) * (
+                            j + 1
+                        )
 
                         output = self.pre(current_data, current_max_len)
 
@@ -125,10 +125,7 @@ class Trainer:
                     # Only process data points that haven't reached max_len
                     current_data = data[unfinished_data, : j + 1]
                     current_label = label[unfinished_data, j]
-                    current_max_len = max_len[unfinished_data]
-
-                    # (B, T, ~) -> (B, max_len, ~)
-                    current_data = F.pad(current_data, (0, 0, 0, 0, 0, 0, 0, max_len.max() - current_data.shape[1]))
+                    current_max_len = torch.ones_like(max_len[unfinished_data]) * (j + 1)
 
                     output = self.pre(current_data, current_max_len)
 
