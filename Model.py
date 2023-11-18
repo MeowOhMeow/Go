@@ -86,7 +86,7 @@ class Predictor(nn.Module):
         super(Predictor, self).__init__()
         # convoluiton layer
         self.conv = nn.Sequential(
-            # (B, 3, 19, 19) -> (B, 5, 19, 19)
+            # (B, 3, 19, 19) -> (B, 3, 19, 19)
             nn.Conv2d(
                 3,
                 5,
@@ -96,40 +96,10 @@ class Predictor(nn.Module):
             ),
             nn.BatchNorm2d(5),
             nn.SiLU(),
-            # (B, 5, 19, 19) -> (B, 7, 19, 19)
-            nn.Conv2d(
-                5,
-                7,
-                kernel_size=5,
-                stride=1,
-                padding=2,
-            ),
-            nn.BatchNorm2d(7),
-            nn.SiLU(),
-            # (B, 7, 19, 19) -> (B, 5, 19, 19)
-            nn.Conv2d(
-                7,
-                5,
-                kernel_size=7,
-                stride=1,
-                padding=3,
-            ),
-            nn.BatchNorm2d(5),
-            nn.SiLU(),
-            # (B, 5, 19, 19) -> (B, 3, 19, 19)
-            nn.Conv2d(
-                5,
-                3,
-                kernel_size=5,
-                stride=1,
-                padding=2,
-            ),
-            nn.BatchNorm2d(3),
-            nn.SiLU(),
         )
 
         self.transform = nn.Sequential(
-            nn.Linear(19 * 19 * 3, input_dim),
+            nn.Linear(19 * 19 * 5, input_dim),
             nn.SiLU(),
             nn.Dropout(dropout),
         )
@@ -177,7 +147,7 @@ class Predictor(nn.Module):
         # convert from (B * T, 3, 19, 19) to (B * T, 19, 19, 3)
         cnn_output = cnn_output.permute(0, 2, 3, 1)
         # convert from (B * T, 19, 19, 3) to (B , T, 19 * 19 * 3)
-        flattened_output = cnn_output.reshape(batch_size, seq_len, 19 * 19 * 3)
+        flattened_output = cnn_output.reshape(batch_size, seq_len, -1)
 
         # Pass the input through the linear layer
         transformed_output = self.transform(flattened_output)
