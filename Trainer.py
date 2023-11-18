@@ -17,7 +17,6 @@ class Trainer:
         config: dict,
         train_loader: DataLoader,
         val_loader: DataLoader,
-        version: str = "v1",
         load_model: bool = False,
         from_epoch: int = 0,
         path: str = None,
@@ -26,10 +25,10 @@ class Trainer:
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.from_epoch = from_epoch
-        self.version = version
+        self.version = f'v{config["selected"]}'
         
-        if not os.path.exists(f"models/{version}"):
-            os.makedirs(f"models/{version}")
+        if not os.path.exists(f"models/{self.version}"):
+            os.makedirs(f"models/{self.version}")
 
         if load_model:
             self.pre = torch.load(path)
@@ -94,6 +93,7 @@ class Trainer:
                             .sum()
                             .item()
                         )
+
             if i == 100:
                 break
             
