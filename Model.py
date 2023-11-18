@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 
 from Conformer import Conformer
+from CNN import CNN
 
 
 class PositionalEncoding(nn.Module):
@@ -84,56 +85,9 @@ class Predictor(nn.Module):
         convolution_first=False,
     ):
         super(Predictor, self).__init__()
-        # convoluiton layer
-        self.conv = nn.Sequential(
-            # (B, 3, 19, 19) -> (B, 5, 19, 19)
-            nn.Conv2d(
-                3,
-                5,
-                kernel_size=3,
-                stride=1,
-                padding=1,
-            ),
-            nn.BatchNorm2d(5),
-            nn.SiLU(),
-            # (B, 5, 19, 19) -> (B, 7, 19, 19)
-            nn.Conv2d(
-                5,
-                7,
-                kernel_size=5,
-                stride=1,
-                padding=2,
-            ),
-            nn.BatchNorm2d(7),
-            nn.SiLU(),
-            # (B, 7, 19, 19) -> (B, 5, 19, 19)
-            nn.Conv2d(
-                7,
-                5,
-                kernel_size=7,
-                stride=1,
-                padding=3,
-            ),
-            nn.BatchNorm2d(5),
-            nn.SiLU(),
-            # (B, 5, 19, 19) -> (B, 3, 19, 19)
-            nn.Conv2d(
-                5,
-                3,
-                kernel_size=5,
-                stride=1,
-                padding=2,
-            ),
-            nn.BatchNorm2d(3),
-            nn.SiLU(),
-        )
 
-        self.transform = nn.Sequential(
-            nn.Linear(19 * 19 * 3, input_dim),
-            nn.SiLU(),
-            nn.Dropout(dropout),
-        )
-
+        self.CNN = CNN(input_dim, dropout)
+        
         # Instantiate the PositionalEncoding module
         self.positional_encoding = PositionalEncoding(input_dim, max_len, dropout)
 
@@ -166,24 +120,11 @@ class Predictor(nn.Module):
         Returns:
             torch.Tensor: Output tensor with shape `(B, output_dim)`.
         """
-        batch_size = x.shape[0]
-        seq_len = x.shape[1]
-        # convert from (B, T, 19, 19, 3) to (B, T, 3, 19, 19)
-        x = x.permute(0, 1, 4, 2, 3)
-        # convert from (B, T, 3, 19, 19) to (B * T, 3, 19, 19)
-        x = x.reshape(batch_size * seq_len, 3, 19, 19)
-        # Pass the input through the convolution layer
-        cnn_output = self.conv(x)
-        # convert from (B * T, 3, 19, 19) to (B * T, 19, 19, 3)
-        cnn_output = cnn_output.permute(0, 2, 3, 1)
-        # convert from (B * T, 19, 19, 3) to (B , T, 19 * 19 * 3)
-        flattened_output = cnn_output.reshape(batch_size, seq_len, 19 * 19 * 3)
-
-        # Pass the input through the linear layer
-        transformed_output = self.transform(flattened_output)
+        # Pass the input through the CNN
+        cnn_output = self.CNN(x)
 
         # Pass the input through the positional encoding layer
-        preprocessed_output = self.positional_encoding(transformed_output)
+        preprocessed_output = self.positional_encoding(cnn_output)
 
         # Pass the input through the Conformer layers
         conformer_output, _ = self.conformer(preprocessed_output, lengths)
