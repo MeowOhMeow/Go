@@ -49,7 +49,7 @@ class Trainer:
 
         self.optimizer = torch.optim.Adam(self.pre.parameters(), lr=config["lr"])
 
-        self.criterion = nn.MSELoss()
+        self.criterion = nn.CrossEntropyLoss()
 
         self.clip_value = config["clip_value"]
 
@@ -70,29 +70,12 @@ class Trainer:
             max_len = max_len.to(self.config["device"])
 
             with torch.no_grad():
-                for j in range(0, max_len.max()):
-                    # Check if any data point in the batch has reached its max_len
-                    unfinished_data = max_len > j
+                output = self.pre(data, max_len)
 
-                    if unfinished_data.any():
-                        # Only process data points that haven't reached max_len
-                        current_data = data[unfinished_data, : j + 1]
-                        current_label = label[unfinished_data, j]
-                        current_max_len = torch.ones_like(max_len[unfinished_data]) * (
-                            j + 1
-                        )
+            loss = self.criterion(output, label)
+            total_loss += loss.item()
 
-                        output = self.pre(current_data, current_max_len)
-
-                        loss = self.criterion(output, current_label)
-
-                        total_loss += loss.item()
-
-                        total_correct += (
-                            (output.argmax(dim=1) == current_label.argmax(dim=1))
-                            .sum()
-                            .item()
-                        )
+            total_correct += (output.argmax(1) == label).sum().item()
 
             if i == 100:
                 break
@@ -115,31 +98,16 @@ class Trainer:
             label = label.to(self.config["device"])
             max_len = max_len.to(self.config["device"])
 
-            for j in range(0, max_len.max()):
-                # Check if any data point in the batch has reached its max_len
-                unfinished_data = max_len > j
+            self.optimizer.zero_grad()
 
-                if unfinished_data.any():
-                    self.optimizer.zero_grad()
+            output = self.pre(data, max_len)
 
-                    # Only process data points that haven't reached max_len
-                    current_data = data[unfinished_data, : j + 1]
-                    current_label = label[unfinished_data, j]
-                    current_max_len = torch.ones_like(max_len[unfinished_data]) * (j + 1)
+            loss = self.criterion(output, label)
+            total_loss += loss.item()
 
-                    output = self.pre(current_data, current_max_len)
-
-                    loss = self.criterion(output, current_label)
-
-                    loss.backward()
-
-                    torch.nn.utils.clip_grad_norm_(
-                        self.pre.parameters(), self.clip_value
-                    )
-
-                    self.optimizer.step()
-
-                    total_loss += loss.item()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.pre.parameters(), self.clip_value)
+            self.optimizer.step()
             
             if i == 900:
                 break
