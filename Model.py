@@ -176,8 +176,8 @@ class Predictor(nn.Module):
         cnn_output = self.conv(x)
         # convert from (B * T, 3, 19, 19) to (B * T, 19, 19, 3)
         cnn_output = cnn_output.permute(0, 2, 3, 1)
-        # convert from (B * T, 19, 19, 3) to (B , T, 19 * 19 * 3)
-        flattened_output = cnn_output.reshape(batch_size, seq_len, 19 * 19 * 3)
+        # convert from (B * T, 19, 19, 3) to (B , T, input_dim)
+        flattened_output = cnn_output.reshape(batch_size, seq_len, -1)
 
         # Pass the input through the linear layer
         transformed_output = self.transform(flattened_output)

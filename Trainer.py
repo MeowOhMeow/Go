@@ -76,7 +76,7 @@ class Trainer:
 
                     if unfinished_data.any():
                         # Only process data points that haven't reached max_len
-                        current_data = data[unfinished_data, : j + 1]
+                        current_data = torch.flip(data[unfinished_data, : j + 1], [1])
                         current_label = label[unfinished_data, j]
                         current_max_len = torch.ones_like(max_len[unfinished_data]) * (
                             j + 1
@@ -93,7 +93,7 @@ class Trainer:
                             .sum()
                             .item()
                         )
-
+                        
             if i == 100:
                 break
             
@@ -123,7 +123,7 @@ class Trainer:
                     self.optimizer.zero_grad()
 
                     # Only process data points that haven't reached max_len
-                    current_data = data[unfinished_data, : j + 1]
+                    current_data = torch.flip(data[unfinished_data, : j + 1], [1])
                     current_label = label[unfinished_data, j]
                     current_max_len = torch.ones_like(max_len[unfinished_data]) * (j + 1)
 
@@ -140,7 +140,7 @@ class Trainer:
                     self.optimizer.step()
 
                     total_loss += loss.item()
-            
+                
             if i == 900:
                 break
 
