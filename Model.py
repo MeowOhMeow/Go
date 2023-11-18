@@ -188,10 +188,7 @@ class Predictor(nn.Module):
         # Pass the input through the Conformer layers
         conformer_output, _ = self.conformer(preprocessed_output, lengths)
 
-        # truncate the output to the first token
-        output = conformer_output[:, 0, :]
-
         # Pass the output through the linear layer
-        output = self.output_layer(output)
+        output = self.output_layer(conformer_output)
 
         return output
