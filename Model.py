@@ -154,6 +154,8 @@ class Predictor(nn.Module):
             nn.Softmax(dim=-1),
         )
 
+        self.max_len = max_len
+
     def forward(self, x: torch.Tensor, lengths: torch.Tensor):
         """
         Forward pass of the Generator (Conformer model).
@@ -186,7 +188,7 @@ class Predictor(nn.Module):
         preprocessed_output = self.positional_encoding(transformed_output)
 
         # Pass the input through the Conformer layers
-        conformer_output, _ = self.conformer(preprocessed_output, lengths)
+        conformer_output, _ = self.conformer(preprocessed_output, lengths, self.max_len)
 
         # Pass the output through the linear layer
         output = self.output_layer(conformer_output)

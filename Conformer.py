@@ -6,9 +6,9 @@ import torch
 __all__ = ["Conformer"]
 
 
-def _lengths_to_padding_mask(lengths: torch.Tensor) -> torch.Tensor:
+def _lengths_to_padding_mask(lengths: torch.Tensor, max_len: int) -> torch.Tensor:
     batch_size = lengths.shape[0]
-    max_length = int(torch.max(lengths).item())
+    max_length = max_len
     padding_mask = torch.arange(max_length, device=lengths.device, dtype=lengths.dtype).expand(
         batch_size, max_length
     ) >= lengths.unsqueeze(1)
@@ -270,12 +270,13 @@ class Conformer(torch.nn.Module):
             ]
         )
 
-    def forward(self, input: torch.Tensor, lengths: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, input: torch.Tensor, lengths: torch.Tensor, max_len: int) -> Tuple[torch.Tensor, torch.Tensor]:
             r"""
             Args:
                 input (torch.Tensor): with shape `(B, T, input_dim)`.
                 lengths (torch.Tensor): with shape `(B,)` and i-th element representing
                     number of valid frames for i-th batch element in ``input``.
+                max_len (int): maximum length of input sequence.
 
             Returns:
                 (torch.Tensor, torch.Tensor)
@@ -285,7 +286,7 @@ class Conformer(torch.nn.Module):
                         output lengths, with shape `(B,)` and i-th element representing
                         number of valid frames for i-th batch element in output frames.
             """
-            encoder_padding_mask = _lengths_to_padding_mask(lengths)
+            encoder_padding_mask = _lengths_to_padding_mask(lengths, max_len=max_len)
 
             x = input.transpose(0, 1)
             for layer in self.conformer_layers:
