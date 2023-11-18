@@ -33,8 +33,8 @@ config = {
     "input_dim": 19 * 19 * 3,
     "output_dim": 19 * 19,
     "num_heads": 3,
-    "ffn_dim": 512,
-    "num_layers": 3,
+    "ffn_dim": 128,
+    "num_layers": 1,
     "depthwise_conv_kernel_size": 3,
     "dropout": 0.1,
     "use_group_norm": False,
@@ -44,10 +44,10 @@ config = {
     "dis_path": "data/models/dis",
     "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     # "device": torch.device("cpu"),
-    "batch_size": 20,
+    "batch_size": 128,
     "clip_value": 1,
     "data_len": goDataset.get_longest_game(),
-    "epochs": 3,
+    "epochs": 2,
     "early_stop": 3,
     "selected": 0
 }

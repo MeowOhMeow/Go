@@ -75,7 +75,7 @@ class Trainer:
                     unfinished_data = max_len > j
 
                     if unfinished_data.any():
-                        current_data = torch.flip(data[unfinished_data, : j + 1], [1])
+                        current_data = data[unfinished_data, : j + 1]
 
                         output = self.pre(current_data, torch.ones_like(max_len[unfinished_data]) * (j + 1))
 
@@ -90,9 +90,6 @@ class Trainer:
                             .sum()
                             .item()
                         )
-
-            if i == 100:
-                break
             
         val_losses.append(total_loss / len(self.val_loader))
         val_accs.append(total_correct / len(self.val_loader.dataset))
@@ -119,7 +116,7 @@ class Trainer:
                 if unfinished_data.any():
                     self.optimizer.zero_grad()
 
-                    current_data = torch.flip(data[unfinished_data, : j + 1], [1])
+                    current_data = data[unfinished_data, : j + 1]
 
                     output = self.pre(current_data, torch.ones_like(max_len[unfinished_data]) * (j + 1))
 
@@ -134,9 +131,6 @@ class Trainer:
                     self.optimizer.step()
 
                     total_loss += loss.item()
-            
-            if i == 900:
-                break
 
 
         train_losses.append(total_loss / len(self.train_loader))
