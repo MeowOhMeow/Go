@@ -75,14 +75,11 @@ class Trainer:
                     unfinished_data = max_len > j
 
                     if unfinished_data.any():
-                        # Only process data points that haven't reached max_len
-                        current_data = data[unfinished_data, : j + 1]
-                        current_label = label[unfinished_data, j]
-                        current_max_len = torch.ones_like(max_len[unfinished_data]) * (
-                            j + 1
-                        )
+                        current_data = torch.flip(data[unfinished_data, : j + 1], [1])
 
-                        output = self.pre(current_data, current_max_len)
+                        output = self.pre(current_data, torch.ones_like(max_len[unfinished_data]) * (j + 1))
+
+                        current_label = label[unfinished_data, j]
 
                         loss = self.criterion(output, current_label)
 
@@ -122,14 +119,11 @@ class Trainer:
                 if unfinished_data.any():
                     self.optimizer.zero_grad()
 
-                    # Only process data points that haven't reached max_len
-                    current_data = data[unfinished_data, : j + 1]
-                    current_label = label[unfinished_data, j]
-                    current_max_len = torch.ones_like(max_len[unfinished_data]) * (j + 1)
+                    current_data = torch.flip(data[unfinished_data, : j + 1], [1])
 
-                    output = self.pre(current_data, current_max_len)
+                    output = self.pre(current_data, torch.ones_like(max_len[unfinished_data]) * (j + 1))
 
-                    loss = self.criterion(output, current_label)
+                    loss = self.criterion(output, label[unfinished_data, j])
 
                     loss.backward()
 
