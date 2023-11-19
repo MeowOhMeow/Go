@@ -22,15 +22,47 @@ class CNN(nn.Module):
             # # (B, 3, 19, 19) -> (B, 9, 19, 19)
             nn.Conv2d(
                 3,
-                9,
+                32,
+                kernel_size=5,
+                stride=1,
+                padding=2,
+            ),
+            nn.SiLU(),
+            # (B, 9, 19, 19) -> (B, 32, 19, 19)
+            nn.Conv2d(
+                32,
+                32,
                 kernel_size=3,
                 stride=1,
                 padding=1,
             ),
             nn.SiLU(),
-            # (B, 9, 19, 19) -> (B, 32, 19, 19)
             nn.Conv2d(
-                9,
+                32,
+                32,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+            ),
+            nn.SiLU(),
+            nn.Conv2d(
+                32,
+                32,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+            ),
+            nn.SiLU(),
+            nn.Conv2d(
+                32,
+                32,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+            ),
+            nn.SiLU(),
+            nn.Conv2d(
+                32,
                 32,
                 kernel_size=3,
                 stride=1,
