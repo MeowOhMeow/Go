@@ -121,10 +121,7 @@ class Predictor(nn.Module):
             torch.Tensor: Output tensor with shape `(B, output_dim)`.
         """
         # Pass the input through the CNN
-        cnn_output = self.CNN(x)
-        print(cnn_output.shape)
-        # concatenate the color to the output of the CNN
-        cnn_output = torch.cat((cnn_output, color), dim=1)
+        cnn_output = self.CNN(x, color)
 
         # Pass the input through the positional encoding layer
         preprocessed_output = self.positional_encoding(cnn_output)

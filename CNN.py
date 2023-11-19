@@ -27,6 +27,7 @@ class CNN(nn.Module):
                 stride=1,
                 padding=2,
             ),
+            nn.BatchNorm2d(32),
             nn.SiLU(),
             # (B, 9, 19, 19) -> (B, 32, 19, 19)
             nn.Conv2d(
@@ -36,6 +37,7 @@ class CNN(nn.Module):
                 stride=1,
                 padding=1,
             ),
+            nn.BatchNorm2d(32),
             nn.SiLU(),
             nn.Conv2d(
                 32,
@@ -44,6 +46,7 @@ class CNN(nn.Module):
                 stride=1,
                 padding=1,
             ),
+            nn.BatchNorm2d(32),
             nn.SiLU(),
             nn.Conv2d(
                 32,
@@ -52,6 +55,7 @@ class CNN(nn.Module):
                 stride=1,
                 padding=1,
             ),
+            nn.BatchNorm2d(32),
             nn.SiLU(),
             nn.Conv2d(
                 32,
@@ -60,6 +64,7 @@ class CNN(nn.Module):
                 stride=1,
                 padding=1,
             ),
+            nn.BatchNorm2d(32),
             nn.SiLU(),
             nn.Conv2d(
                 32,
@@ -68,16 +73,17 @@ class CNN(nn.Module):
                 stride=1,
                 padding=1,
             ),
+            nn.BatchNorm2d(32),
             nn.SiLU(),
         )
 
         self.transform = nn.Sequential(
-            nn.Linear(32 * 19 * 19, output_dim),
+            nn.Linear(32 * 19 * 19 + 1, output_dim),
             nn.SiLU(),
             nn.Dropout(dropout),
         )
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, color: torch.Tensor):
         """
         Forward pass of the Generator (Conformer model).
 
@@ -100,5 +106,7 @@ class CNN(nn.Module):
         cnn_output = cnn_output.permute(0, 2, 3, 1)
         # flatten the output into 1D
         flattened_output = cnn_output.reshape(batch_size, seq_len, -1)
+        # concatenate color information
+        flattened_output = torch.cat([flattened_output, color], dim=-1)
         # Pass the input through the transformation layer
         return self.transform(flattened_output)

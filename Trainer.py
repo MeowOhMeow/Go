@@ -127,7 +127,7 @@ class Trainer:
 
                 if unfinished_data.any():
                     self.optimizer.zero_grad()
-                    print(color.shape)
+                    
                     output = self.pre(data[unfinished_data, : j + 1], torch.ones_like(max_len[unfinished_data]) * (j + 1), color[unfinished_data, : j + 1])
 
                     current_label = label[unfinished_data, j]
