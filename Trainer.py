@@ -108,12 +108,16 @@ class Trainer:
 
         self.pre.train()
 
-        total_loss = 0
+        all_loss = 0
 
         for i, (data, max_len, label) in enumerate(tqdm(self.train_loader)):
             data = data.to(self.config["device"])
             label = label.to(self.config["device"])
             max_len = max_len.to(self.config["device"])
+
+            total_loss = 0
+            total_correct = 0
+            total_predictions = 0
 
             for j in range(0, max_len.max()):
                 # Check if any data point in the batch has reached its max_len
@@ -124,7 +128,16 @@ class Trainer:
 
                     output = self.pre(data[unfinished_data, : j + 1], torch.ones_like(max_len[unfinished_data]) * (j + 1))
 
-                    loss = self.criterion(output, label[unfinished_data, j])
+                    current_label = label[unfinished_data, j]
+
+                    total_correct += (
+                            (output.argmax(dim=1) == current_label.argmax(dim=1))
+                            .sum()
+                            .item()
+                        )
+                    total_predictions += len(current_label)
+
+                    loss = self.criterion(output, current_label)
 
                     loss.backward()
 
@@ -135,6 +148,10 @@ class Trainer:
                     self.optimizer.step()
 
                     total_loss += loss.item()
+                
+            all_loss += total_loss / len(self.train_loader)
+            print(f"Training accuracy: {total_correct / total_predictions}")
+            print(f"Training loss: {total_loss / len(self.train_loader)}")
 
             if (i + 1) % 20 == 0:
                 torch.save(
@@ -142,9 +159,9 @@ class Trainer:
                     f"models/{self.version}/batch_{i + 1}.pth",
                 )
 
-        train_losses.append(total_loss / len(self.train_loader))
+        train_losses.append(all_loss / len(self.train_loader))
         
-        print(f"Training loss: {total_loss / len(self.train_loader)}")
+        print(f"Training loss: {all_loss / len(self.train_loader)}")
 
 
     def run(self):
