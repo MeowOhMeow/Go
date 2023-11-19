@@ -30,16 +30,16 @@ data_len = 10
 goDataset = GoDataset("data/train/dan_train.csv", data_len)
 
 config = {
-    "input_dim": 128,
+    "input_dim": 256,
     "output_dim": 19 * 19,
-    "num_heads": 2,
-    "ffn_dim": 128,
+    "num_heads": 4,
+    "ffn_dim": 256,
     "num_layers": 2,
     "depthwise_conv_kernel_size": 3,
     "dropout": 0.1,
     "use_group_norm": False,
     "convolution_first": False,
-    "lr": 0.00001,
+    "lr": 0.0001,
     "gen_path": "data/models/gen",
     "dis_path": "data/models/dis",
     "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
@@ -47,8 +47,8 @@ config = {
     "batch_size": 1024,
     "clip_value": 5,
     "data_len": data_len,
-    "epochs": 100,
-    "early_stop": 20,
+    "epochs": 400,
+    "early_stop": 400,
     "selected": 1
 }
 
@@ -66,7 +66,7 @@ train_loader = DataLoader(
 val_loader = DataLoader(
     val_dataset, batch_size=int(config["batch_size"]), shuffle=False, pin_memory=True
 )
-trainer = Trainer(config, train_loader, val_loader)
+trainer = Trainer(config, train_loader, val_loader, load_model=True, from_epoch=20, path="models/v1/epoch_20.pth")
 statistic = trainer.run()
 
 

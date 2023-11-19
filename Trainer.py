@@ -49,7 +49,7 @@ class Trainer:
 
         self.optimizer = torch.optim.Adam(self.pre.parameters(), lr=config["lr"])
 
-        self.criterion = nn.MSELoss()
+        self.criterion = nn.CrossEntropyLoss()
 
         self.clip_value = config["clip_value"]
 
@@ -178,17 +178,18 @@ class Trainer:
         val_accs = []
 
         for epoch in range(self.config["epochs"]):
-            print(f"Epoch {epoch + 1}/{self.config['epochs']}")
+            print(f"Epoch {epoch + 1 + self.from_epoch}/{self.config['epochs'] + self.from_epoch}")
             self.train(trian_losses)
             self.evaluate(val_losses, val_accs)
 
             gc.collect()
             torch.cuda.empty_cache()
 
-            torch.save(
-                self.pre,
-                f"models/{self.version}/epoch_{epoch + 1}.pth",
-            )
+            if (epoch + 1 + self.from_epoch) % 10 == 0:
+                torch.save(
+                    self.pre,
+                    f"models/{self.version}/epoch_{epoch + 1 + self.from_epoch}.pth",
+                )
 
             if self.early_count >= self.config["early_stop"]:
                 break
