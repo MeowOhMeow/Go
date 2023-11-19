@@ -26,8 +26,8 @@ def set_seed(seed):
 seed = 11032006
 set_seed(seed)
 
-
-goDataset = GoDataset("data/train/dan_train.csv")
+data_len = 10
+goDataset = GoDataset("data/train/dan_train.csv", data_len)
 
 config = {
     "input_dim": 128,
@@ -44,9 +44,9 @@ config = {
     "dis_path": "data/models/dis",
     "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     # "device": torch.device("cpu"),
-    "batch_size": 64,
+    "batch_size": 1024,
     "clip_value": 5,
-    "data_len": goDataset.get_longest_game(),
+    "data_len": data_len,
     "epochs": 30,
     "early_stop": 10,
     "selected": 0

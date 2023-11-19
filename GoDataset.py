@@ -10,7 +10,7 @@ from GoGame import GoGame
 
 
 class GoDataset(Dataset):
-    def __init__(self, path_of_data):
+    def __init__(self, path_of_data, data_len):
         """
         Initializes the GoDataset with the given CSV file path.
         Args:
@@ -21,17 +21,14 @@ class GoDataset(Dataset):
         self.preprocessed_path = "data/preprocessed data"
         self.char2idx = {c: i for i, c in enumerate("abcdefghijklmnopqrs")}
         self.dir_len = len(os.listdir('data/preprocessed data'))
+        self.data_len = data_len
 
         # Load data from CSV file
         with open(self.path, newline="") as csvfile:
             reader = csv.reader(csvfile, delimiter=",")
             # Read row by row
             self.data = list(reader)  # dtype: list[str]
-            
-        longest = 0
-        for row in self.data:
-            longest = max(longest, len(row))
-        self.longest = longest - 2
+    
 
     def _read_from_file(self, row):
         # get filename
@@ -46,29 +43,24 @@ class GoDataset(Dataset):
         
         max_len = len(boards)
 
-        # pad boards
-        boards = F.pad(boards, (0, 0, 0, 0, 0, 0, 0, self.longest - max_len))
-        color = 1 if row[2][0] == 'B' else 0
-        colors = torch.empty((self.longest, 1), dtype=torch.float32)
-        for i in range(max_len):
+        random_start = np.random.randint(0, max_len - self.data_len)
+        boards = boards[random_start:random_start + self.data_len]
+
+        color = 1 if row[random_start + 2][0] == 'B' else 0
+        colors = torch.empty((self.data_len, 1), dtype=torch.float32)
+        for i in range(self.data_len):
             if i % 2 == color:
                 colors[i] = 1
             else:
                 colors[i] = -1
         # get label
-        labels = torch.zeros((self.longest, 361), dtype=torch.float32)
-        for i in range(3, len(row)):
-            # get x, y
-            x, y = self.char2idx[row[i][2]], self.char2idx[row[i][3]]
-            # set label
-            labels[i - 3][x * 19 + y] = 1
+        x = self.char2idx[row[random_start + self.data_len + 3][2]]
+        y = self.char2idx[row[random_start + self.data_len + 3][3]]
+        label = torch.zeros((361), dtype=torch.float32)
+        label[x * 19 + y] = 1
 
-        return boards, max_len, labels, colors
+        return boards, label, colors
     
-    def get_longest_game(self):
-        
-        return self.longest
-
     def __len__(self):
         """
         Returns the number of samples in the dataset.

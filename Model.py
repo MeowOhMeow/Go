@@ -108,7 +108,7 @@ class Predictor(nn.Module):
             nn.Softmax(dim=-1),
         )
 
-    def forward(self, x: torch.Tensor, lengths: torch.Tensor, color: torch.Tensor):
+    def forward(self, x: torch.Tensor, color: torch.Tensor, lengths: torch.Tensor):
         """
         Forward pass of the Generator (Conformer model).
 

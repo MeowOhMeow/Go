@@ -63,39 +63,48 @@ class Trainer:
 
         total_loss = 0
         total_correct = 0
-        total_predictions = 0
 
-        for i, (data, max_len, label, color) in enumerate(tqdm(self.val_loader)):
+        for i, (data, label, color) in enumerate(tqdm(self.val_loader)):
             data = data.to(self.config["device"])
             label = label.to(self.config["device"])
-            max_len = max_len.to(self.config["device"])
             color = color.to(self.config["device"])
 
             with torch.no_grad():
-                for j in range(0, max_len.max()):
-                    # Check if any data point in the batch has reached its max_len
-                    unfinished_data = max_len > j
+                output = self.pre(data, color, torch.ones(len(data), dtype=torch.float32).to(self.config["device"]) * data.shape[1])
 
-                    if unfinished_data.any():
-                        output = self.pre(data[unfinished_data, : j + 1], torch.ones_like(max_len[unfinished_data]) * (j + 1), color[unfinished_data, : j + 1])
+                loss = self.criterion(output, label)
+                
+                total_loss += loss.item()
 
-                        current_label = label[unfinished_data, j]
+                total_correct += (
+                    (output.argmax(dim=-1) == label.argmax(dim=-1))
+                    .sum()
+                    .item()
+                )
+                # for j in range(0, max_len.max()):
+                #     # Check if any data point in the batch has reached its max_len
+                #     unfinished_data = max_len > j
 
-                        loss = self.criterion(output, current_label)
+                #     if unfinished_data.any():
+                #         output = self.pre(data[unfinished_data, : j + 1], torch.ones_like(max_len[unfinished_data]) * (j + 1), color[unfinished_data, : j + 1])
 
-                        total_loss += loss.item()
+                #         current_label = label[unfinished_data, j]
 
-                        total_correct += (
-                            (output.argmax(dim=1) == current_label.argmax(dim=1))
-                            .sum()
-                            .item()
-                        )
-                        total_predictions += len(current_label)
+                #         loss = self.criterion(output, current_label)
+
+                #         total_loss += loss.item()
+
+                #         total_correct += (
+                #             (output.argmax(dim=1) == current_label.argmax(dim=1))
+                #             .sum()
+                #             .item()
+                #         )
+                #         total_predictions += len(current_label)
             
         val_losses.append(total_loss / len(self.val_loader))
-        val_accs.append(total_correct / total_predictions)
+        val_accs.append(total_correct / len(self.val_loader))
 
-        print(f"Validation accuracy: {total_correct / total_predictions}")
+        print(f"Validation accuracy: {total_correct / len(self.val_loader)}")
         print(f"Validation loss: {total_loss / len(self.val_loader)}")
         
         if total_loss / len(self.val_loader) < self.best_val_loss:
@@ -109,61 +118,56 @@ class Trainer:
 
         self.pre.train()
 
-        all_loss = 0
+        total_loss = 0
 
-        for i, (data, max_len, label, color) in enumerate(tqdm(self.train_loader)):
+        for i, (data, label, color) in enumerate(tqdm(self.train_loader)):
             data = data.to(self.config["device"])
             label = label.to(self.config["device"])
-            max_len = max_len.to(self.config["device"])
             color = color.to(self.config["device"])
 
-            total_loss = 0
-            total_correct = 0
-            total_predictions = 0
+            self.optimizer.zero_grad()
+            
+            output = self.pre(data, color, torch.ones(len(data), dtype=torch.float32).to(self.config["device"]) * data.shape[1])
 
-            for j in range(0, max_len.max()):
-                # Check if any data point in the batch has reached its max_len
-                unfinished_data = max_len > j
+            loss = self.criterion(output, label)
+            
+            loss.backward()
+            
+            total_loss += loss.item()
 
-                if unfinished_data.any():
-                    self.optimizer.zero_grad()
-                    
-                    output = self.pre(data[unfinished_data, : j + 1], torch.ones_like(max_len[unfinished_data]) * (j + 1), color[unfinished_data, : j + 1])
+            # for j in range(0, max_len.max()):
+            #     # Check if any data point in the batch has reached its max_len
+            #     unfinished_data = max_len > j
 
-                    current_label = label[unfinished_data, j]
+            #     if unfinished_data.any():
+            #         self.optimizer.zero_grad()
 
-                    total_correct += (
-                            (output.argmax(dim=1) == current_label.argmax(dim=1))
-                            .sum()
-                            .item()
-                        )
-                    total_predictions += len(current_label)
+            #         output = self.pre(data[unfinished_data, : j + 1], torch.ones_like(max_len[unfinished_data]) * (j + 1), color[unfinished_data, : j + 1])
 
-                    loss = self.criterion(output, current_label)
+            #         current_label = label[unfinished_data, j]
 
-                    loss.backward()
+            #         total_correct += (
+            #                 (output.argmax(dim=1) == current_label.argmax(dim=1))
+            #                 .sum()
+            #                 .item()
+            #             )
+            #         total_predictions += len(current_label)
 
-                    torch.nn.utils.clip_grad_norm_(
-                        self.pre.parameters(), self.clip_value
-                    )
+            #         loss = self.criterion(output, current_label)
 
-                    self.optimizer.step()
+            #         loss.backward()
 
-                    total_loss += loss.item()
+            #         torch.nn.utils.clip_grad_norm_(
+            #             self.pre.parameters(), self.clip_value
+            #         )
+
+            #         self.optimizer.step()
+
+            #         total_loss += loss.item()
                 
-            all_loss += total_loss / len(self.train_loader)
-            print(f"Training accuracy: {total_correct / total_predictions}")
-            print(f"Training loss: {total_loss / len(self.train_loader)}")
-
-            if (i + 1) % 20 == 0:
-                torch.save(
-                    self.pre,
-                    f"models/{self.version}/batch_{i + 1}.pth",
-                )
-
-        train_losses.append(all_loss / len(self.train_loader))
+        train_losses.append(total_loss / len(self.train_loader))
         
-        print(f"Training loss: {all_loss / len(self.train_loader)}")
+        print(f"Training loss: {total_loss / len(self.train_loader)}")
 
 
     def run(self):
