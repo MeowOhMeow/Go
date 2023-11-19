@@ -108,7 +108,7 @@ class Predictor(nn.Module):
             nn.Softmax(dim=-1),
         )
 
-    def forward(self, x: torch.Tensor, lengths: torch.Tensor):
+    def forward(self, x: torch.Tensor, lengths: torch.Tensor, color: torch.Tensor):
         """
         Forward pass of the Generator (Conformer model).
 
@@ -122,6 +122,9 @@ class Predictor(nn.Module):
         """
         # Pass the input through the CNN
         cnn_output = self.CNN(x)
+        print(cnn_output.shape)
+        # concatenate the color to the output of the CNN
+        cnn_output = torch.cat((cnn_output, color), dim=1)
 
         # Pass the input through the positional encoding layer
         preprocessed_output = self.positional_encoding(cnn_output)

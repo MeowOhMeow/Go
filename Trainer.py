@@ -65,10 +65,11 @@ class Trainer:
         total_correct = 0
         total_predictions = 0
 
-        for i, (data, max_len, label) in enumerate(tqdm(self.val_loader)):
+        for i, (data, max_len, label, color) in enumerate(tqdm(self.val_loader)):
             data = data.to(self.config["device"])
             label = label.to(self.config["device"])
             max_len = max_len.to(self.config["device"])
+            color = color.to(self.config["device"])
 
             with torch.no_grad():
                 for j in range(0, max_len.max()):
@@ -76,7 +77,7 @@ class Trainer:
                     unfinished_data = max_len > j
 
                     if unfinished_data.any():
-                        output = self.pre(data[unfinished_data, : j + 1], torch.ones_like(max_len[unfinished_data]) * (j + 1))
+                        output = self.pre(data[unfinished_data, : j + 1], torch.ones_like(max_len[unfinished_data]) * (j + 1), color[unfinished_data, : j + 1])
 
                         current_label = label[unfinished_data, j]
 
@@ -110,10 +111,11 @@ class Trainer:
 
         all_loss = 0
 
-        for i, (data, max_len, label) in enumerate(tqdm(self.train_loader)):
+        for i, (data, max_len, label, color) in enumerate(tqdm(self.train_loader)):
             data = data.to(self.config["device"])
             label = label.to(self.config["device"])
             max_len = max_len.to(self.config["device"])
+            color = color.to(self.config["device"])
 
             total_loss = 0
             total_correct = 0
@@ -125,8 +127,8 @@ class Trainer:
 
                 if unfinished_data.any():
                     self.optimizer.zero_grad()
-
-                    output = self.pre(data[unfinished_data, : j + 1], torch.ones_like(max_len[unfinished_data]) * (j + 1))
+                    print(color.shape)
+                    output = self.pre(data[unfinished_data, : j + 1], torch.ones_like(max_len[unfinished_data]) * (j + 1), color[unfinished_data, : j + 1])
 
                     current_label = label[unfinished_data, j]
 

@@ -44,7 +44,7 @@ config = {
     "dis_path": "data/models/dis",
     "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     # "device": torch.device("cpu"),
-    "batch_size": 128,
+    "batch_size": 16,
     "clip_value": 5,
     "data_len": goDataset.get_longest_game(),
     "epochs": 30,

@@ -48,16 +48,22 @@ class GoDataset(Dataset):
 
         # pad boards
         boards = F.pad(boards, (0, 0, 0, 0, 0, 0, 0, self.longest - max_len))
-
+        color = 1 if row[2][0] == 'B' else 0
+        colors = torch.empty((self.longest, 1), dtype=torch.float32)
+        for i in range(max_len):
+            if i % 2 == color:
+                colors[i] = 1
+            else:
+                colors[i] = -1
         # get label
-        label = torch.zeros((self.longest, 361), dtype=torch.float32)
+        labels = torch.zeros((self.longest, 361), dtype=torch.float32)
         for i in range(3, len(row)):
             # get x, y
             x, y = self.char2idx[row[i][2]], self.char2idx[row[i][3]]
             # set label
-            label[i - 3][x * 19 + y] = 1
+            labels[i - 3][x * 19 + y] = 1
 
-        return boards, max_len, label
+        return boards, max_len, labels, colors
     
     def get_longest_game(self):
         
