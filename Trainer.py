@@ -49,7 +49,7 @@ class Trainer:
 
         self.optimizer = torch.optim.Adam(self.pre.parameters(), lr=config["lr"])
 
-        self.criterion = nn.MSELoss()
+        self.criterion = nn.CrossEntropyLoss()
 
         self.clip_value = config["clip_value"]
 
@@ -63,6 +63,7 @@ class Trainer:
 
         total_loss = 0
         total_correct = 0
+        total_predictions = 0
 
         for i, (data, max_len, label) in enumerate(tqdm(self.val_loader)):
             data = data.to(self.config["device"])
@@ -90,11 +91,12 @@ class Trainer:
                             .sum()
                             .item()
                         )
+                        total_predictions += len(current_label)
             
         val_losses.append(total_loss / len(self.val_loader))
-        val_accs.append(total_correct / len(self.val_loader.dataset))
+        val_accs.append(total_correct / total_predictions)
 
-        print(f"Validation accuracy: {total_correct / len(self.val_loader.dataset)}")
+        print(f"Validation accuracy: {total_correct / total_predictions}")
         print(f"Validation loss: {total_loss / len(self.val_loader)}")
 
     def train(self, train_losses: list):
@@ -131,7 +133,6 @@ class Trainer:
                     self.optimizer.step()
 
                     total_loss += loss.item()
-
 
         train_losses.append(total_loss / len(self.train_loader))
         

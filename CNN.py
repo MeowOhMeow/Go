@@ -19,31 +19,28 @@ class CNN(nn.Module):
         super().__init__()
         # convoluiton layer
         self.conv = nn.Sequential(
-            # (B, 3, 19, 19) -> (B, 64, 19, 19)
+            # # (B, 3, 19, 19) -> (B, 9, 19, 19)
             nn.Conv2d(
                 3,
-                64,
+                9,
                 kernel_size=3,
                 stride=1,
                 padding=1,
             ),
-            nn.BatchNorm2d(64),
             nn.SiLU(),
-            # (B, 64, 19, 19) -> (B, 128, 19, 19)
+            # (B, 9, 19, 19) -> (B, 32, 19, 19)
             nn.Conv2d(
-                64,
-                128,
+                9,
+                32,
                 kernel_size=3,
                 stride=1,
                 padding=1,
             ),
-            nn.BatchNorm2d(128),
             nn.SiLU(),
         )
 
         self.transform = nn.Sequential(
-            nn.Linear(128 * 19 * 19, output_dim),
-            nn.BatchNorm1d(output_dim),
+            nn.Linear(32 * 19 * 19, output_dim),
             nn.SiLU(),
             nn.Dropout(dropout),
         )
