@@ -49,7 +49,7 @@ class Trainer:
 
         self.optimizer = torch.optim.Adam(self.pre.parameters(), lr=config["lr"])
 
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.MSELoss()
 
         self.clip_value = config["clip_value"]
 
@@ -101,11 +101,11 @@ class Trainer:
                 #         )
                 #         total_predictions += len(current_label)
             
-        val_losses.append(total_loss / len(self.val_loader))
-        val_accs.append(total_correct / len(self.val_loader))
+        val_losses.append(total_loss / len(self.val_loader) / self.config["batch_size"])
+        val_accs.append(total_correct / len(self.val_loader) / self.config["batch_size"])
 
-        print(f"Validation accuracy: {total_correct / len(self.val_loader)}")
-        print(f"Validation loss: {total_loss / len(self.val_loader)}")
+        print(f"Validation accuracy: {total_correct / len(self.val_loader) / self.config['batch_size']}")
+        print(f"Validation loss: {total_loss / len(self.val_loader) / self.config['batch_size']}")
         
         if total_loss / len(self.val_loader) < self.best_val_loss:
             self.best_val_loss = total_loss / len(self.val_loader)
@@ -130,10 +130,12 @@ class Trainer:
             output = self.pre(data, color, torch.ones(len(data), dtype=torch.float32).to(self.config["device"]) * data.shape[1])
 
             loss = self.criterion(output, label)
+            total_loss += loss.item()
             
             loss.backward()
+
+            self.optimizer.step()
             
-            total_loss += loss.item()
 
             # for j in range(0, max_len.max()):
             #     # Check if any data point in the batch has reached its max_len
@@ -165,9 +167,9 @@ class Trainer:
 
             #         total_loss += loss.item()
                 
-        train_losses.append(total_loss / len(self.train_loader))
+        train_losses.append(total_loss / len(self.train_loader) / self.config["batch_size"])
         
-        print(f"Training loss: {total_loss / len(self.train_loader)}")
+        print(f"Training loss: {total_loss / len(self.train_loader) / self.config['batch_size']}")
 
 
     def run(self):

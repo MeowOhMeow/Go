@@ -47,9 +47,9 @@ config = {
     "batch_size": 1024,
     "clip_value": 5,
     "data_len": data_len,
-    "epochs": 30,
-    "early_stop": 10,
-    "selected": 0
+    "epochs": 100,
+    "early_stop": 20,
+    "selected": 1
 }
 
 train_len = int(0.9 * len(goDataset))
