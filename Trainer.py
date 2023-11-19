@@ -76,9 +76,7 @@ class Trainer:
                     unfinished_data = max_len > j
 
                     if unfinished_data.any():
-                        current_data = data[unfinished_data, : j + 1]
-
-                        output = self.pre(current_data, torch.ones_like(max_len[unfinished_data]) * (j + 1))
+                        output = self.pre(data[unfinished_data, : j + 1], torch.ones_like(max_len[unfinished_data]) * (j + 1))
 
                         current_label = label[unfinished_data, j]
 
@@ -98,6 +96,12 @@ class Trainer:
 
         print(f"Validation accuracy: {total_correct / total_predictions}")
         print(f"Validation loss: {total_loss / len(self.val_loader)}")
+        
+        if total_loss / len(self.val_loader) < self.best_val_loss:
+            self.best_val_loss = total_loss / len(self.val_loader)
+            self.early_count = 0
+        else:
+            self.early_count += 1
 
     def train(self, train_losses: list):
         print(f"Training:")
@@ -118,9 +122,7 @@ class Trainer:
                 if unfinished_data.any():
                     self.optimizer.zero_grad()
 
-                    current_data = data[unfinished_data, : j + 1]
-
-                    output = self.pre(current_data, torch.ones_like(max_len[unfinished_data]) * (j + 1))
+                    output = self.pre(data[unfinished_data, : j + 1], torch.ones_like(max_len[unfinished_data]) * (j + 1))
 
                     loss = self.criterion(output, label[unfinished_data, j])
 
@@ -133,6 +135,12 @@ class Trainer:
                     self.optimizer.step()
 
                     total_loss += loss.item()
+
+            if (i + 1) % 20 == 0:
+                torch.save(
+                    self.pre,
+                    f"models/{self.version}/batch_{i + 1}.pth",
+                )
 
         train_losses.append(total_loss / len(self.train_loader))
         
@@ -151,7 +159,6 @@ class Trainer:
 
             gc.collect()
             torch.cuda.empty_cache()
-
 
             torch.save(
                 self.pre,
